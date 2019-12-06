@@ -11,13 +11,7 @@
                :cljs [schema.core :as s :include-macros true]))
   #?(:clj (:import [asami.index GraphIndexed])))
 
-(defn node-type?
-  "Filters for all datatypes that can represent nodes.
-   For now, these are only keywords."
-  [n]
-  (keyword? n))
-
-(extend-type #?(:clj GraphIndexed :cljs index/GraphIndexed)
+(extend-type GraphIndexed
   loom/Graph
   (nodes [{:keys [spo osp] :as graph}]
     (into (set (keys spo)) (keys osp)))
