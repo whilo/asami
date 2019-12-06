@@ -130,11 +130,21 @@
   [graph :- gr/GraphType]
   (->MemoryStore nil graph))
 
+(s/defn coerce-store :- StorageType
+  "Converts some known types to Storage, else leaves alone"
+  [data]
+  (cond
+    (satisfies? Storage data) data  ;; most likely path first
+    (satisfies? gr/Graph data) (graph->store data)
+    (and (seq data) (every? #(= 3 (count %)) data))
+      (graph->store (reduce (partial apply gr/graph-add) mem/empty-graph data))
+    :default data))
+
 (s/defn q
   [query & inputs]
   (let [{:keys [find in with where]} (-> (query/query-map query)
                                          query/query-validator)
         [bindings default-store] (query/create-bindings in inputs)
-        store (or default-store empty-store)
+        store (coerce-store (or default-store empty-store))
         graph (or (:graph store) mem/empty-graph)]
     (store-util/project store find (query/join-patterns graph where bindings))))
