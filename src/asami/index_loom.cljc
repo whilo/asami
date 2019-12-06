@@ -2,46 +2,62 @@
       :author "Paula Gearon"}
     asami.index-loom
   (:require [asami.graph :as gr :refer [graph-add]]
-            [asami.index :as index]
             [clojure.set :as set]
             [loom.graph :as loom :refer [nodes edges has-node? successors*
                                          out-degree out-edges]]
+            #?(:clj  [asami.index :as index]
+               :cljs [asami.index :as index :refer [GraphIndexed]])
             #?(:clj  [schema.core :as s]
                :cljs [schema.core :as s :include-macros true]))
   #?(:clj (:import [asami.index GraphIndexed])))
 
-(defn node-type?
-  "Filters for all datatypes that can represent nodes.
-   For now, these are only keywords."
-  [n]
-  (keyword? n))
+(defn nodes* [{:keys [spo osp] :as graph}]
+  (into (set (keys spo)) (keys osp)))
 
-(extend-type GraphIndexed
-  loom/Graph
-  (nodes [{:keys [spo osp] :as graph}]
-    (into (set (keys spo)) (keys osp)))
+(defn edges* [{:keys [osp] :as graph}]
+  (let [edge-pairs (for [o (keys osp) s (keys (osp o))]
+                     (if (get-in osp [s o]) [[s o]] [[s o] [o s]]))]
+    (apply concat edge-pairs)))
 
-  (edges [{:keys [osp] :as graph}]
-    (let [edge-pairs (for [o (keys osp) s (keys (osp o))]
-                       (if (get-in osp [s o]) [[s o]] [[s o] [o s]]))]
-      (apply concat edge-pairs)))
+(defn has-node?* [{:keys [spo osp] :as graph} node]
+  (boolean (or (spo node) (osp node))))
 
-  (has-node? [{:keys [spo osp] :as graph} node]
-    (boolean (or (spo node) (osp node))))
+(defn has-edge?* [{:keys [osp] :as graph} n1 n2]
+  (boolean (get-in osp [n2 n1])))
 
-  (has-edge? [{:keys [osp] :as graph} n1 n2]
-    (boolean (get-in osp [n2 n1])))
+(defn successors** [{:keys [spo] :as graph} node]
+  (apply set/union (vals (spo node))))
 
-  (successors* [{:keys [spo] :as graph} node]
-    (apply set/union (vals (spo node))))
+(defn out-degree* [{:keys [spo] :as graph} node]
+  ;; drops duplicates for different predicates!
+  (count (apply set/union (vals (spo node)))))
 
-  (out-degree [{:keys [spo] :as graph} node]
-    ;; drops duplicates for different predicates!
-    (count (apply set/union (vals (spo node)))))
+(defn out-edges*
+  [{:keys [spo] :as graph} node]
+  (for [o (apply set/union (vals (spo node)))] [node o]))
 
-  (out-edges [{:keys [spo] :as graph} node]
-    "Returns all the outgoing edges of node"
-    (for [o (apply set/union (vals (spo node)))] [node o])))
+
+#?(:clj
+   (extend-type GraphIndexed
+     loom/Graph
+     (nodes [g] (nodes* g))
+     (edges [g] (edges* g))
+     (has-node? [g node] (has-node?* g node))
+     (has-edge? [g n1 n2] (has-edge?* g n1 n2))
+     (successors* [g node] (successors** g node))
+     (out-degree [g node] (out-degree* g node))
+     (out-edges [g node] (out-edges* g node))))
+
+#?(:cljs
+   (extend-type index/GraphIndexed
+     loom/Graph
+     (nodes [g] (nodes* g))
+     (edges [g] (edges* g))
+     (has-node? [g node] (has-node?* g node))
+     (has-edge? [g n1 n2] (has-edge?* g n1 n2))
+     (successors* [g node] (successors** g node))
+     (out-degree [g node] (out-degree* g node))
+     (out-edges [g node] (out-edges* g node))))
 
 (defn add-edge
   [g [s o :as edge]]
