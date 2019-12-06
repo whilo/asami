@@ -29,4 +29,4 @@
              false (has-node? g1 5)
              false (has-edge? g1 4 1)))))
 
-#?(:cljc (run-tests))
+#?(:cljs (run-tests))
