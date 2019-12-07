@@ -17,7 +17,7 @@
         g5 (graph)]
     (testing "Construction, nodes, edges"
       (are [expected got] (= expected got)
-           #{1 2 3} (set (nodes g1))
+           #{1 2 3 4} (set (nodes g1))
            #{[1 2] [1 3] [2 3]} (set (edges g1))
            (set (nodes g2)) (set (nodes g1))
            (set (edges g2)) (set (edges g1))

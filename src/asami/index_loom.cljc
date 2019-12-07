@@ -3,7 +3,7 @@
     asami.index-loom
   (:require [asami.graph :as gr :refer [graph-add graph-delete resolve-triple]]
             [clojure.set :as set]
-            [loom.graph :as loom :refer [nodes edges has-node? successors*
+            [loom.graph :as loom :refer [nodes edges has-node? successors* build-graph
                                          out-degree out-edges
                                          add-edges*
                                          add-nodes add-edges]]
@@ -85,25 +85,6 @@
      gr nodes))
 
   (remove-all [gr] index/empty-graph))
-
-(defn build-graph
-  "Builds up a graph (i.e. adds edges and nodes) from any combination of
-  other graphs, adjacency maps, edges, or nodes. Modified form of the
-  equivalent function in Loom."
-  [g & inits]
-  (letfn [(build [g init]
-            (cond
-             ;; graph
-             (satisfies? loom/Graph init)
-             (add-edges* g (edges init))
-             ;; adacency map
-             (map? init)
-             (add-edges* g (for [[n nbrs] init nbr nbrs] [n nbr]))
-             ;; edge
-             (sequential? init) (add-edges g init)
-             ;; node - ignore
-             :else g))]
-    (reduce build g inits)))
 
 (defn graph
   "Creates an index graph with a set of edges. All edges are unlabelled."
