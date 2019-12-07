@@ -18,7 +18,7 @@
     (testing "Construction, nodes, edges"
       (are [expected got] (= expected got)
            #{1 2 3} (set (nodes g1))
-           #{[1 2] [2 1] [1 3] [3 1] [2 3] [3 2]} (set (edges g1))
+           #{[1 2] [1 3] [2 3]} (set (edges g1))
            (set (nodes g2)) (set (nodes g1))
            (set (edges g2)) (set (edges g1))
            (set (nodes g3)) (set (nodes g1))
