@@ -96,8 +96,12 @@
   (in-edges [g node]
     (map (fn [s] [s node]) (keys (osp node))))
 
-  (transpose [g]
-    index/empty-graph))
+  (transpose [{:keys [osp] :as gr}]
+    (let [nodes (keys (get osp nil))
+          triples (resolve-triple gr '?a '?b '?c)]
+      (-> index/empty-graph
+          (reduce (fn [g [a b c]] (graph-add g [c b a])) triples)
+          (add-nodes* nodes)))))
 
 (defn graph
   "Creates an index graph with a set of edges. All edges are unlabelled."
