@@ -84,7 +84,20 @@
          (reduce #(graph-add %1 %2 nil nil) scrubbed reinserts)))
      gr nodes))
 
-  (remove-all [gr] index/empty-graph))
+  (remove-all [gr] index/empty-graph)
+
+  loom/Digraph
+  (predecessors* [{:keys [osp]} node]
+    (keys (osp node)))
+
+  (in-degree [g node]
+    (count (osp node)))
+
+  (in-edges [g node]
+    (map (fn [s] [s node]) (keys (osp node))))
+
+  (transpose [g]
+    index/empty-graph))
 
 (defn graph
   "Creates an index graph with a set of edges. All edges are unlabelled."
