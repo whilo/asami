@@ -5,7 +5,7 @@
             [clojure.set :as set]
             [loom.graph :as loom :refer [nodes edges has-node? successors* build-graph
                                          out-degree out-edges
-                                         add-edges*
+                                         add-edges* add-nodes*
                                          add-nodes add-edges]]
             #?(:clj  [asami.index :as index]
                :cljs [asami.index :as index :refer [GraphIndexed]])
@@ -90,20 +90,20 @@
   (predecessors* [{:keys [osp]} node]
     (keys (osp node)))
 
-  (in-degree [g node]
+  (in-degree [{:keys [osp]} node]
     (count (osp node)))
 
-  (in-edges [g node]
+  (in-edges [{:keys [osp]} node]
     (map (fn [s] [s node]) (keys (osp node))))
 
   (transpose [{:keys [osp] :as gr}]
     (let [nodes (keys (get osp nil))
           triples (resolve-triple gr '?a '?b '?c)]
-      (-> index/empty-graph
-          (reduce (fn [g [a b c]] (graph-add g [c b a])) triples)
+      (-> (reduce (fn [g [a b c]] (if c (graph-add g c b a) g)) index/empty-graph triples)
           (add-nodes* nodes)))))
 
 (defn graph
   "Creates an index graph with a set of edges. All edges are unlabelled."
   [& inits]
   (apply build-graph index/empty-graph inits))
+
