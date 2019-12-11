@@ -1,4 +1,4 @@
-(ns ^{:doc "An in-memory graph implementation with full indexing."
+(ns ^{:doc "Extension of Asami in-memory index to Loom protocols"
       :author "Paula Gearon"}
     asami.index-loom
   (:require [asami.graph :as gr :refer [graph-add graph-delete resolve-triple]]
