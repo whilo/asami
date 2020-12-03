@@ -114,14 +114,15 @@
           [[] pool]
           words))
 
+
 (deftest test-words
-  (let [book (slurp "test/resources/pride_and_prejudice.txt")
-        words (s/split book #"\s")
-        pool (create-pool "book2")
+  (let [book          (slurp "test/resources/pride_and_prejudice.txt") 
+        words         (s/split book #"\s")
+        pool          (create-pool "book2")
         [coded bpool] (load-strings! words pool)
-        root (:root-id bpool)
-        g (find-id bpool "Gutenberg")
-        output-words (map #(find-object bpool %) coded)]
+        root          (:root-id bpool)
+        g             (find-id bpool "Gutenberg")
+        output-words  (map #(find-object bpool %) coded)]
     (is (= "Gutenberg" (find-object bpool g)))
     (is (= words output-words))
 
@@ -138,3 +139,92 @@
       (is (= root (:root-id bpool2)))
       (close bpool2)))
   (recurse-delete "book2"))
+
+
+(comment
+  (let [_             (prn "============== asami ==============")
+        book          (slurp "test/resources/pride_and_prejudice.txt")
+        words         (set (s/split book #"\s"))
+        _             (prn "creating pool for " (count words))
+        pool          (time (create-pool "book2"))
+        _             (prn "loading data")
+        [coded bpool] (time (load-strings! words pool))
+        _             (prn "loaded data")
+        root          (:root-id bpool)
+                                        ;g             (find-id bpool "Gutenberg")
+        _             (prn "reading all data")
+        output-words  (time (doall (map #(find-object bpool %) coded)))
+        _             (prn "read all data" (count output-words))]
+    (close bpool)
+    (recurse-delete "book2")
+    :done
+    )
+
+
+  (require '[hitchhiker.tree.utils.async :as ha :include-macros true]
+           '[hitchhiker.tree.bootstrap.konserve :as kons]
+           '[hitchhiker.tree :as core]
+           '[hitchhiker.tree.messaging :as msg]
+           '[konserve.filestore :refer [new-fs-store delete-store]]
+           '[konserve.cache :as kc]
+           '[clojure.core.async :refer [promise-chan] :as async])
+
+
+  (let [_             (prn "============== hh-tree ==============")
+        book          (slurp "test/resources/pride_and_prejudice.txt")
+        words         (set (s/split book #"\s"))
+        _             (prn "creating store for " (count words) (count (set words)))
+        folder "/tmp/async-hitchhiker-tree-test"
+        _ (delete-store folder)
+        store (kons/add-hitchhiker-tree-handlers
+               (kc/ensure-cache (async/<!! (new-fs-store folder :config {:fsync true}))))
+        backend (kons/->KonserveBackend store)
+        _             (prn "loading data")
+        datahike-config (core/->Config 17 300 (- 300 17))
+        faster-config (core/->Config 30 900 (- 900 30))
+        flushed       (ha/<?? (core/flush-tree
+                               (time (reduce (fn [t i]
+                                               (ha/<?? (msg/insert t i i)))
+                                             (ha/<?? (core/b-tree faster-config))
+                                             words))
+                               backend))
+        _             (prn "loaded data")
+        root-key (kons/get-root-key (:tree flushed))
+        ;; reload
+        tree (ha/<? (kons/create-tree-from-root-key store root-key))
+        _             (prn "reading all data")
+        output-words  (time (doall (msg/lookup-fwd-iter tree "")))
+        _             (prn "read all data" (count output-words))]
+    :done
+    )
+
+
+  (let [folder "/tmp/async-hitchhiker-tree-test"
+             _ (delete-store folder)
+             store (kons/add-hitchhiker-tree-handlers
+                    (kc/ensure-cache (async/<!! (new-fs-store folder :config {:fsync true}))))
+             backend (kons/->KonserveBackend store)
+             flushed (ha/<?? (core/flush-tree
+                              (time (reduce (fn [t i]
+                                              (ha/<?? (msg/insert t i i)))
+                                            (ha/<?? (core/b-tree (core/->Config 1 3 (- 3 1))))
+                                            (range 1 11)))
+                              backend))
+             root-key (kons/get-root-key (:tree flushed))
+             tree (ha/<?? (kons/create-tree-from-root-key store root-key))]
+         (is (= (ha/<?? (msg/lookup tree -10)) nil))
+         (is (= (ha/<?? (msg/lookup tree 100)) nil))
+         (dotimes [i 10]
+           (is (= (ha/<?? (msg/lookup tree (inc i))) (inc i))))
+         (is (= (map first (msg/lookup-fwd-iter tree 4)) (range 4 11)))
+         (is (= (map first (msg/lookup-fwd-iter tree 0)) (range 1 11)))
+         (let [deleted (ha/<?? (core/flush-tree (ha/<?? (msg/delete tree 3)) backend))
+               root-key (kons/get-root-key (:tree deleted))
+               tree (ha/<?? (kons/create-tree-from-root-key store root-key))]
+           (is (= (ha/<?? (msg/lookup tree 2)) 2))
+           (is (= (ha/<?? (msg/lookup tree 3)) nil))
+           (is (= (ha/<?? (msg/lookup tree 4)) 4)))
+         (delete-store folder)) 
+
+
+  )

@@ -9,7 +9,10 @@
                  [org.clojure/core.cache "0.8.2"]
                  [org.clojars.quoll/zuko "0.3.2"]
                  [tailrecursion/cljs-priority-map "1.2.1"]
-                 [org.clojure/data.priority-map "1.0.0"]]
+                 [org.clojure/data.priority-map "1.0.0"]
+                 [io.replikativ/hitchhiker-tree "0.1.9"]
+                 [io.replikativ/konserve "0.6.0-alpha1"]
+                 ]
   :plugins [[lein-cljsbuild "1.1.7"]
             [cider/cider-nrepl "0.24.0"]]
   :cljsbuild {
