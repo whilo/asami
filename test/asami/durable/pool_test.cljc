@@ -227,4 +227,24 @@
          (delete-store folder)) 
 
 
+  ;; REPL output
+  ;; "============== asami =============="
+  ;; "creating pool for " 13779
+  ;; "Elapsed time: 19.256731 msecs"
+  ;; "loading data"
+  ;; "Elapsed time: 14618.803674 msecs"
+  ;; "loaded data"
+  ;; "reading all data"
+  ;; "Elapsed time: 1189.145622 msecs"
+  ;; "read all data" 13779
+  ;; "============== hh-tree =============="
+  ;; "creating store for " 13779 13779
+  ;; "loading data"
+  ;; "Elapsed time: 155.655257 msecs"
+  ;; "loaded data"
+  ;; "reading all data"
+  ;; "Elapsed time: 72.265827 msecs"
+  ;; "read all data" 13779
+
+
   )
